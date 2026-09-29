@@ -1,0 +1,268 @@
+// Prisma schema for SQLite / Local development & demo
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("APPLICANT")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  applicantProfile   ApplicantProfile?
+  governmentOfficial GovernmentOfficial?
+  notifications      Notification[]
+  activityLogs       ActivityLog[]
+}
+
+model ApplicantProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicantId        String   @unique @default(cuid())
+  fullName           String
+  dob                DateTime?
+  gender             String?
+  mobile             String?
+  alternateMobile    String?
+  location           String?
+  currentAddress     String?
+  permanentAddress   String?
+  maskedAadhaar      String?
+  verificationStatus String   @default("PENDING")
+  biometricVerified  Boolean  @default(false)
+  profileCompletion  Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  education          Education[]
+  applicantSkills    ApplicantSkill[]
+  enrollments        Enrollment[]
+  applications       Application[]
+  verifications      Verification[]
+  tracker            Tracker?
+  gapAnalyses        GapAnalysis[]
+}
+
+model GovernmentOfficial {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  officialId   String   @unique
+  fullName     String
+  designation  String
+  department   String?
+  governmentId String   @unique
+  epfoStatus   String   @default("PENDING")
+  taxGstStatus String   @default("PENDING")
+  mobile       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Education {
+  id             String           @id @default(cuid())
+  applicantId    String
+  applicant      ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  qualification  String
+  institution    String
+  course         String
+  specialization String?
+  graduationYear Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  applicantSkills ApplicantSkill[]
+  courseSkills    CourseSkill[]
+}
+
+model ApplicantSkill {
+  id          String           @id @default(cuid())
+  applicantId String
+  applicant   ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  skillId     String
+  skill       Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  level       String           @default("BEGINNER")
+  createdAt   DateTime         @default(now())
+
+  @@unique([applicantId, skillId])
+}
+
+model Course {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  duration       String?
+  level          String?
+  availableSeats Int      @default(50)
+  enrolledCount  Int      @default(0)
+  isActive       Boolean  @default(true)
+  imageUrl       String?
+  instructor     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  courseSkills    CourseSkill[]
+  enrollments     Enrollment[]
+  recommendations Recommendation[]
+}
+
+model CourseSkill {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  skillId  String
+  skill    Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, skillId])
+}
+
+model Enrollment {
+  id          String           @id @default(cuid())
+  applicantId String
+  applicant   ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status      String           @default("ENROLLED")
+  progress    Int              @default(0)
+  enrolledAt  DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([applicantId, courseId])
+}
+
+model Application {
+  id              String           @id @default(cuid())
+  applicationId   String           @unique @default(cuid())
+  applicantId     String
+  applicant       ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  applicationType String
+  program         String?
+  status          String           @default("SUBMITTED")
+  remarks         String?
+  submittedAt     DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  statusHistory ApplicationStatusHistory[]
+}
+
+model ApplicationStatusHistory {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status        String
+  remarks       String?
+  updatedAt     DateTime    @default(now())
+  updatedBy     String?
+}
+
+model Verification {
+  id          String           @id @default(cuid())
+  applicantId String
+  applicant   ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  type        String
+  status      String           @default("PENDING")
+  verifiedAt  DateTime?
+  remarks     String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Tracker {
+  id               String           @id @default(cuid())
+  applicantId      String           @unique
+  applicant        ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  designation      String?
+  governmentId     String?
+  epfoStatus       String           @default("PENDING")
+  taxGstStatus     String           @default("PENDING")
+  credentialStatus String?
+  lastUpdated      DateTime         @default(now())
+  updatedBy        String?
+  notes            String?
+  createdAt        DateTime         @default(now())
+}
+
+model GapAnalysis {
+  id              String           @id @default(cuid())
+  applicantId     String
+  applicant       ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  targetRole      String
+  matchPercentage Int
+  summary         String?
+  isDemo          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+
+  skillGaps       SkillGap[]
+  learningPath    LearningPath[]
+  recommendations Recommendation[]
+}
+
+model SkillGap {
+  id            String      @id @default(cuid())
+  gapAnalysisId String
+  gapAnalysis   GapAnalysis @relation(fields: [gapAnalysisId], references: [id], onDelete: Cascade)
+  skillName     String
+  currentLevel  String
+  requiredLevel String
+  priority      String      @default("MEDIUM")
+  createdAt     DateTime    @default(now())
+}
+
+model LearningPath {
+  id            String      @id @default(cuid())
+  gapAnalysisId String
+  gapAnalysis   GapAnalysis @relation(fields: [gapAnalysisId], references: [id], onDelete: Cascade)
+  stage         Int
+  topic         String
+  duration      String?
+  description   String?
+}
+
+model Recommendation {
+  id            String      @id @default(cuid())
+  gapAnalysisId String
+  gapAnalysis   GapAnalysis @relation(fields: [gapAnalysisId], references: [id], onDelete: Cascade)
+  courseId      String?
+  course        Course?     @relation(fields: [courseId], references: [id])
+  reason        String?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  resource  String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
