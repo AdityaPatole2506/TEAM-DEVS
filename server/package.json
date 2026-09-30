@@ -31,11 +31,11 @@
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.0",
     "prisma": "5.22.0",
+    "ts-node": "^10.9.0",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0",
-    "ts-node": "^10.9.0"
+    "nodemon": "^3.0.0"
   },
   "allowScripts": {
     "@prisma/client@5.22.0": true,
